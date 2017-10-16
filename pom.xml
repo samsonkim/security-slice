@@ -21,6 +21,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <dropwizard.version>1.1.4</dropwizard.version>
+        <jackson-datatype-joda>2.9.2</jackson-datatype-joda>
         <guava.version>23.2-jre</guava.version>
 
         <mainClass>com.skim.SecuritySliceApplication</mainClass>
@@ -55,6 +56,11 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${jackson-datatype-joda}</version>
         </dependency>
 
         <!-- Test dep -->

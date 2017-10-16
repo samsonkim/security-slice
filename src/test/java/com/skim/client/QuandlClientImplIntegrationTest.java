@@ -8,14 +8,12 @@ import io.dropwizard.client.JerseyClientBuilder;
 import io.dropwizard.client.JerseyClientConfiguration;
 import io.dropwizard.util.Duration;
 import org.hamcrest.CoreMatchers;
+import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
 import javax.ws.rs.client.Client;
 import java.net.URI;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -23,6 +21,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
+import static com.skim.utils.DateUtils.*;
 
 /*
     Integration test for calling out to Quandl API
@@ -31,7 +30,6 @@ public class QuandlClientImplIntegrationTest {
     private QuandlClientImpl instance;
     private String databaseCode;
     private String stockSymbol;
-    private SimpleDateFormat dateFormat;
 
     @Before
     public void setUp() throws Exception {
@@ -40,7 +38,6 @@ public class QuandlClientImplIntegrationTest {
         databaseCode = "WIKI";
         stockSymbol = "COF";
 
-        dateFormat = QuandlClientImpl.DATE_FORMAT;
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         JerseyClientConfiguration jerseyClientConfiguration = new JerseyClientConfiguration();
         jerseyClientConfiguration.setTimeout(Duration.seconds(5));
@@ -54,9 +51,9 @@ public class QuandlClientImplIntegrationTest {
     }
 
     @Test
-    public void testWithOptions() throws ParseException {
-        Date startDate = dateFormat.parse("2017-01-01");
-        Date endDate = dateFormat.parse("2017-06-30");
+    public void testWithOptions() {
+        LocalDate startDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-01-01");
+        LocalDate endDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-06-30");
 
         QuandlTimeSeriesResponse response = instance.getTimeSeries(databaseCode,
                 stockSymbol,

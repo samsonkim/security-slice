@@ -11,11 +11,22 @@ logging:
   loggers:
     com.skim: DEBUG
 
-#Stock listing
-#Start/end date
-#Cache settings
+securityProvider:
+  securities:
+    - COF
+    - GOOGL
+    - MSFT
+  startDate: 2017-01-01
+  endDate: 2017-06-30
 
-#Quadl client settings
-#URI
-#apiKey
-#DatabaseCode
+quandl:
+  uri: https://www.quandl.com
+  apiKey: s-GMZ_xkw6CrkGYUWs1p
+  databaseCode: WIKI
+  jerseyClient:
+    timeout: 3000ms
+    connectionTimeout: 3000ms
+    gzipEnabled: true
+    gzipEnabledForRequests: true
+
+  #Cache settings

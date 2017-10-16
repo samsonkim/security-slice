@@ -8,6 +8,13 @@ public class QuandlTimeSeriesResponse {
     @JsonProperty
     private QuandlTimeSeriesDataset dataset;
 
+    public QuandlTimeSeriesResponse() {
+    }
+
+    public QuandlTimeSeriesResponse(QuandlTimeSeriesDataset dataset) {
+        this.dataset = dataset;
+    }
+
     public QuandlTimeSeriesDataset getDataset() {
         return dataset;
     }

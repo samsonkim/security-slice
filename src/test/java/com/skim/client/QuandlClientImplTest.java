@@ -1,11 +1,13 @@
 package com.skim.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.io.Resources;
 import com.skim.client.dto.QuandlTimeSeriesCollapse;
 import com.skim.client.dto.QuandlTimeSeriesDataset;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
 import org.hamcrest.CoreMatchers;
+import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,30 +15,28 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static com.skim.utils.DateUtils.*;
 
 /*
     Unit test for parsing out Quandl api responses
  */
 public class QuandlClientImplTest {
     private ObjectMapper objectMapper;
-    private SimpleDateFormat simpleDateFormat;
 
     @Before
     public void setUp() throws Exception {
-        simpleDateFormat = QuandlClientImpl.DATE_FORMAT;
-        objectMapper = QuandlClientImpl.OBJECT_MAPPER;
+        objectMapper = QuandlClientImpl.OBJECT_MAPPER.registerModule(new JodaModule());
     }
 
     /*
         Verify fields we care about are accessible from response
      */
     @Test
-    public void testParseDailyTimeSeriesResponse() throws IOException, URISyntaxException, ParseException {
+    public void testParseDailyTimeSeriesResponse() throws IOException, URISyntaxException {
         URL url = Resources.getResource("json/test-quandl-daily-time-series.json");
         QuandlTimeSeriesResponse response = objectMapper.readValue(url, QuandlTimeSeriesResponse.class);
 
@@ -66,8 +66,8 @@ public class QuandlClientImplTest {
         assertEquals("daily", dataset.getFrequency());
         assertEquals(QuandlTimeSeriesCollapse.DAILY.getName(), dataset.getCollapse());
 
-        Date startDate = simpleDateFormat.parse("2017-01-01");
-        Date endDate = simpleDateFormat.parse("2017-06-30");
+        LocalDate startDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-01-01");
+        LocalDate endDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-06-30");
 
         assertTrue(startDate.equals(dataset.getStartDate()));
         assertTrue(endDate.equals(dataset.getEndDate()));
@@ -99,7 +99,7 @@ public class QuandlClientImplTest {
     }
 
     @Test
-    public void testParseMonthlyTimeSeriesResponse() throws IOException, URISyntaxException, ParseException {
+    public void testParseMonthlyTimeSeriesResponse() throws IOException, URISyntaxException {
         URL url = Resources.getResource("json/test-quandl-monthly-time-series.json");
         QuandlTimeSeriesResponse response = objectMapper.readValue(url, QuandlTimeSeriesResponse.class);
 
@@ -129,8 +129,8 @@ public class QuandlClientImplTest {
         assertEquals("daily", dataset.getFrequency());
         assertEquals(QuandlTimeSeriesCollapse.MONTHLY.getName(), dataset.getCollapse());
 
-        Date startDate = simpleDateFormat.parse("2017-01-01");
-        Date endDate = simpleDateFormat.parse("2017-06-30");
+        LocalDate startDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-01-01");
+        LocalDate endDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-06-30");
 
         assertTrue(startDate.equals(dataset.getStartDate()));
         assertTrue(endDate.equals(dataset.getEndDate()));

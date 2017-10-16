@@ -1,19 +1,19 @@
 package com.skim.model;
 
-import java.util.Date;
+import org.joda.time.LocalDate;
 
 public class DailySecurityPrice {
-    private final Date date;
+    private final LocalDate date;
     private final float open;
     private final float close;
 
-    public DailySecurityPrice(Date date, float open, float close) {
+    public DailySecurityPrice(LocalDate date, float open, float close) {
         this.date = date;
         this.open = open;
         this.close = close;
     }
 
-    public Date getDate() {
+    public LocalDate getDate() {
         return date;
     }
 

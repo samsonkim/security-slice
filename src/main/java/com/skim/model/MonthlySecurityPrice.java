@@ -1,20 +1,20 @@
 package com.skim.model;
 
-import java.util.Date;
+import org.joda.time.LocalDate;
 
 public class MonthlySecurityPrice {
-    private final Date month;
+    private final LocalDate monthYearDate;
     private final float averageOpen;
     private final float averageClose;
 
-    public MonthlySecurityPrice(Date month, float averageOpen, float averageClose) {
-        this.month = month;
+    public MonthlySecurityPrice(LocalDate monthYearDate, float averageOpen, float averageClose) {
+        this.monthYearDate = monthYearDate;
         this.averageOpen = averageOpen;
         this.averageClose = averageClose;
     }
 
-    public Date getMonth() {
-        return month;
+    public LocalDate getMonthYearDate() {
+        return monthYearDate;
     }
 
     public float getAverageOpen() {
@@ -28,7 +28,7 @@ public class MonthlySecurityPrice {
     @Override
     public String toString() {
         return "MonthlySecurityPrice{" +
-                "month=" + month +
+                "monthYearDate=" + monthYearDate +
                 ", averageOpen=" + averageOpen +
                 ", averageClose=" + averageClose +
                 '}';

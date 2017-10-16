@@ -2,8 +2,8 @@ package com.skim.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.joda.time.LocalDate;
 
-import java.util.Date;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -25,10 +25,10 @@ public class QuandlTimeSeriesDataset {
     private String frequency;
 
     @JsonProperty("start_date")
-    private Date startDate;
+    private LocalDate startDate;
 
     @JsonProperty("end_date")
-    private Date endDate;
+    private LocalDate endDate;
 
     @JsonProperty
     private List<List<String>> data;
@@ -76,19 +76,19 @@ public class QuandlTimeSeriesDataset {
         this.frequency = frequency;
     }
 
-    public Date getStartDate() {
+    public LocalDate getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(Date startDate) {
+    public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
     }
 
-    public Date getEndDate() {
+    public LocalDate getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(Date endDate) {
+    public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
 

@@ -7,31 +7,30 @@ import com.skim.client.dto.QuandlTimeSeriesDataset;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
 import com.skim.model.DailySecurityPrice;
 import com.skim.model.MonthlySecurityPrice;
-import com.skim.utils.DateUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.joda.time.LocalDate;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.skim.utils.DateUtils.*;
 import static java.util.stream.Collectors.groupingBy;
 
 /*
     This security provider will key off of adjusted prices(adj open, adj close) to factor in corporate actions
+
+    Also future refactoring will consist of adding support of being able to pass in other securities
+    and start/end dates as parameters instead of basing it off of the default config
  */
 public class QuandlSecurityProvider implements SecurityProvider {
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuandlSecurityProvider.class);
-    private static final Optional<QuandlTimeSeriesCollapse> COLLAPSE = Optional.of(QuandlTimeSeriesCollapse.DAILY);
+    protected static final Optional<QuandlTimeSeriesCollapse> COLLAPSE = Optional.of(QuandlTimeSeriesCollapse.DAILY);
 
     private final QuandlClient quandlClient;
     private final String databaseCode;
     private final Set<String> defaultSecurities;
-    private final Optional<Date> defaultStartDate;
-    private final Optional<Date> defaultEndDate;
+    private final Optional<LocalDate> defaultStartDate;
+    private final Optional<LocalDate> defaultEndDate;
 
-    public QuandlSecurityProvider(QuandlClient quandlClient, String databaseCode, Set<String> defaultSecurities, Optional<Date> defaultStartDate, Optional<Date> defaultEndDate) {
+    public QuandlSecurityProvider(QuandlClient quandlClient, String databaseCode, Set<String> defaultSecurities, Optional<LocalDate> defaultStartDate, Optional<LocalDate> defaultEndDate) {
         this.quandlClient = quandlClient;
         this.databaseCode = databaseCode;
         this.defaultSecurities = defaultSecurities;
@@ -46,34 +45,44 @@ public class QuandlSecurityProvider implements SecurityProvider {
         for(String stockSymbol : defaultSecurities) {
             QuandlTimeSeriesResponse response = quandlClient.getTimeSeries(databaseCode,
                     stockSymbol, COLLAPSE, defaultStartDate, defaultEndDate);
-
-            //calculate aggregates
-
-            monthlyPriceMap.put(stockSymbol, toMonthlyPrices(response.getDataset()));
+            monthlyPriceMap.put(stockSymbol, toMonthlyPrices(toDailyPrices(response.getDataset())));
         }
 
         return monthlyPriceMap;
     }
 
-    protected static List<MonthlySecurityPrice> toMonthlyPrices(QuandlTimeSeriesDataset dataset){
-        List<MonthlySecurityPrice> monthlyPrices = new ArrayList<>();
+    protected List<MonthlySecurityPrice> toMonthlyPrices(List<DailySecurityPrice> dailyPrices){
+        //Date represented as month/year as key
+        Map<LocalDate, List<DailySecurityPrice>> monthlyPriceMap = dailyPrices
+                .parallelStream()
+                .collect(groupingBy(dsp -> {
+                    String tmp = YEAR_MONTH_DATE_FORMAT.print(dsp.getDate());
+                    return YEAR_MONTH_DATE_FORMAT.parseLocalDate(tmp);
+                }));
 
-        Map<Date, List<DailySecurityPrice>> dailyPriceMap = toDailyPrices(dataset);
+        return monthlyPriceMap.keySet()
+                .parallelStream()
+                .map(month -> {
+                    List<DailySecurityPrice> prices = monthlyPriceMap.get(month);
 
-        for(Date monthDate: dailyPriceMap.keySet()){
-            List<DailySecurityPrice> dailyPrices = dailyPriceMap.get(monthDate);
+                    Double averageOpen = prices.parallelStream()
+                            .mapToDouble(DailySecurityPrice::getOpen)
+                            .average()
+                            .getAsDouble();
 
-            
-        }
+                    Double averageClose = prices.parallelStream()
+                            .mapToDouble(DailySecurityPrice::getClose)
+                            .average()
+                            .getAsDouble();
 
-
-        return monthlyPrices;
+                    return new MonthlySecurityPrice(month, averageOpen.floatValue(), averageClose.floatValue());
+                }).collect(Collectors.toList());
     }
 
     /*
-        Return daily prices grouped by month
+        Converts Quandl response to our model of daily prices
      */
-    protected static Map<Date, List<DailySecurityPrice>> toDailyPrices(QuandlTimeSeriesDataset dataset){
+    protected List<DailySecurityPrice> toDailyPrices(QuandlTimeSeriesDataset dataset){
         List<String> columns = dataset.getColumnNames();
 
         int dateIndex = columns.indexOf(QuandlTimeSeriesColumn.DATE.getColumn());
@@ -81,29 +90,14 @@ public class QuandlSecurityProvider implements SecurityProvider {
         int adjCloseIndex = columns.indexOf(QuandlTimeSeriesColumn.ADJ_CLOSE.getColumn());
 
         //Date represented as month/year as key
-        Map<Date, List<DailySecurityPrice>> dailyPrices = dataset.getData()
-                .stream()
+        List<DailySecurityPrice> dailyPrices = dataset.getData()
+                .parallelStream()
                 .map(r -> {
-                    try {
-                        Date date = QUANDL_DATE_FORMAT.parse(r.get(dateIndex));
-                        float adjustedOpen = Float.parseFloat(r.get(adjOpenIndex));
-                        float adjustedClose = Float.parseFloat(r.get(adjCloseIndex));
-                        return new DailySecurityPrice(date, adjustedOpen, adjustedClose);
-                    } catch (ParseException e) {
-                        LOGGER.warn("Unable to parse record " + r, e);
-                    }
-                    return null;
-                })
-                .filter(dsp -> dsp != null)
-                .collect(groupingBy(dsp -> {
-                    String tmp = QUANDL_DATE_FORMAT.format(dsp.getDate());
-                    try {
-                        return YEAR_MONTH_DATE_FORMAT.parse(tmp.substring(0, tmp.length()-4));
-                    } catch (ParseException e) {
-                        LOGGER.warn("Unable to group by month year for " + dsp, e);
-                        return dsp.getDate();          //shouldn't happen but return original date
-                    }
-                }));
+                    LocalDate date = QUANDL_DATE_FORMAT.parseLocalDate(r.get(dateIndex));
+                    float adjustedOpen = Float.parseFloat(r.get(adjOpenIndex));
+                    float adjustedClose = Float.parseFloat(r.get(adjCloseIndex));
+                    return new DailySecurityPrice(date, adjustedOpen, adjustedClose);
+                }).collect(Collectors.toList());
 
         return dailyPrices;
     }

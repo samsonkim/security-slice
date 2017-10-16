@@ -1,9 +1,10 @@
 package com.skim.utils;
 
-import java.text.SimpleDateFormat;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 
 public class DateUtils {
-    public static final SimpleDateFormat QUANDL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-    public static final SimpleDateFormat YEAR_MONTH_DATE_FORMAT = new SimpleDateFormat("yyyy-MM");
-
+    public static final DateTimeFormatter QUANDL_DATE_FORMAT = ISODateTimeFormat.date();;
+    public static final DateTimeFormatter YEAR_MONTH_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM");
 }
