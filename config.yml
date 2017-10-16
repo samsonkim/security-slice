@@ -1,4 +1,21 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8080
+  adminConnectors:
+    - type: http
+      port: 8081
+
 logging:
   level: INFO
   loggers:
     com.skim: DEBUG
+
+#Stock listing
+#Start/end date
+#Cache settings
+
+#Quadl client settings
+#URI
+#apiKey
+#DatabaseCode
