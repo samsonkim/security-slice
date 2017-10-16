@@ -7,6 +7,7 @@ import com.skim.client.dto.QuandlTimeSeriesDataset;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
 import com.skim.model.DailySecurityPrice;
 import com.skim.model.MonthlySecurityPrice;
+import org.apache.commons.math3.util.Precision;
 import org.joda.time.LocalDate;
 
 import java.util.*;
@@ -23,6 +24,8 @@ import static java.util.stream.Collectors.groupingBy;
  */
 public class QuandlSecurityProvider implements SecurityProvider {
     protected static final Optional<QuandlTimeSeriesCollapse> COLLAPSE = Optional.of(QuandlTimeSeriesCollapse.DAILY);
+    private static final Comparator<MonthlySecurityPrice> MONTHLY_SECURITY_PRICE_COMPARATOR =
+            Comparator.comparing(MonthlySecurityPrice::getMonthYearDate);
 
     private final QuandlClient quandlClient;
     private final String databaseCode;
@@ -75,8 +78,12 @@ public class QuandlSecurityProvider implements SecurityProvider {
                             .average()
                             .getAsDouble();
 
-                    return new MonthlySecurityPrice(month, averageOpen.floatValue(), averageClose.floatValue());
-                }).collect(Collectors.toList());
+                    return new MonthlySecurityPrice(month,
+                            Precision.round(averageOpen.floatValue(), 2),
+                            Precision.round(averageClose.floatValue(), 2));
+                })
+                .sorted(MONTHLY_SECURITY_PRICE_COMPARATOR)
+                .collect(Collectors.toList());
     }
 
     /*

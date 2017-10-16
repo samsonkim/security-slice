@@ -1,5 +1,7 @@
 package com.skim;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.skim.client.QuandlClient;
 import com.skim.client.QuandlClientImpl;
@@ -34,7 +36,15 @@ public class SecuritySliceApplication extends Application<SecuritySliceConfigura
     public void run(final SecuritySliceConfiguration configuration,
                     final Environment environment) {
 
-        environment.getObjectMapper().registerModule(new JodaModule());
+        ObjectMapper objectMapper = environment.getObjectMapper();
+        objectMapper.registerModule(new JodaModule());
+
+        /*
+        TODO add this to docs
+            Formats the json to be human readable instead of compact view.
+            Remove this for real production use
+         */
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
         QuandlConfiguration quandlConfiguration = configuration.getQuandl();
         SecurityProviderConfiguration securityProviderConfiguration = configuration.getSecurityProvider();

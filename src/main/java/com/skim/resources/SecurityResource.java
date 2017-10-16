@@ -1,6 +1,6 @@
 package com.skim.resources;
 
-import com.skim.model.MonthlySecurityPrice;
+import com.skim.api.MonthlySecurityPriceDto;
 import com.skim.provider.SecurityProvider;
 
 import javax.ws.rs.GET;
@@ -9,6 +9,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("/api/securities")
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,7 +21,14 @@ public class SecurityResource {
     }
 
     @GET
-    public Map<String, List<MonthlySecurityPrice>> getMonthlyPrices(){
-        return securityProvider.getMonthlyPrices();
+    public Map<String, List<MonthlySecurityPriceDto>> getMonthlyPrices(){
+        return securityProvider.getMonthlyPrices()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(e -> e.getKey(),
+                        e -> e.getValue()
+                                .stream()
+                                .map(msp -> new MonthlySecurityPriceDto(msp))
+                                .collect(Collectors.toList())));
     }
 }
