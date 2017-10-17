@@ -1,5 +1,8 @@
 package com.skim.resources;
 
+import com.skim.api.BiggestLoserDto;
+import com.skim.api.BusyDayResponseDto;
+import com.skim.api.MaxDailyProfitDto;
 import com.skim.api.MonthlySecurityPriceDto;
 import com.skim.provider.SecurityProvider;
 
@@ -30,5 +33,31 @@ public class SecurityResource {
                                 .stream()
                                 .map(msp -> new MonthlySecurityPriceDto(msp))
                                 .collect(Collectors.toList())));
+    }
+
+    @GET
+    @Path("max-daily-profit")
+    public Map<String, MaxDailyProfitDto> getMaxDailyProfit(){
+        return securityProvider.getMaxDailyProfit()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(e -> e.getKey(),
+                        e -> new MaxDailyProfitDto(e.getValue())));
+    }
+
+    @GET
+    @Path("busy-days")
+    public Map<String, BusyDayResponseDto> getBusyDays(){
+        return securityProvider.getBusyDays()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(e -> e.getKey(),
+                        e -> new BusyDayResponseDto(e.getValue())));
+    }
+
+    @GET
+    @Path("biggest-loser")
+    public BiggestLoserDto getBiggestLoser(){
+        return new BiggestLoserDto(securityProvider.getBiggestLoser());
     }
 }

@@ -136,7 +136,8 @@ public class QuandlSecurityProvider implements SecurityProvider {
         return dailyPrices.parallelStream()
                 .map(p -> {
                     float profit = p.getHigh() - p.getLow();
-                    return new MaxDailyProfit(p.getDate(), profit);
+                    return new MaxDailyProfit(p.getDate(),
+                            Precision.round(profit, 2));
                 })
                 .max(Comparator.comparing(MaxDailyProfit::getProfit))
                 .orElseThrow(NoSuchElementException::new);
@@ -186,14 +187,16 @@ public class QuandlSecurityProvider implements SecurityProvider {
                     float adjustedClose = Float.parseFloat(r.get(adjCloseIndex));
                     float adjustedHigh = Float.parseFloat(r.get(adjHighIndex));
                     float adjustedLow = Float.parseFloat(r.get(adjLowIndex));
-                    long adjustedVolume = Long.parseLong(r.get(adjVolumeIndex));
+
+                    //adj volume is coming back as a float value so resolve by conversion
+                    Float adjustedVolume = Float.parseFloat(r.get(adjVolumeIndex));
 
                     return new DailySecurityPrice(date,
                             adjustedOpen,
                             adjustedClose,
                             adjustedHigh,
                             adjustedLow,
-                            adjustedVolume);
+                            adjustedVolume.longValue());
                 }).collect(Collectors.toList());
 
         return dailyPrices;
