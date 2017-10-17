@@ -38,7 +38,6 @@ public class SecuritySliceApplication extends Application<SecuritySliceConfigura
         objectMapper.registerModule(new JodaModule());
 
         /*
-        TODO add this to docs
             Formats the json to be human readable instead of compact view.
             Remove this for real production use
          */

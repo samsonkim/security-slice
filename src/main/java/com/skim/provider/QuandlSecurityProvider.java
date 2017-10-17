@@ -22,7 +22,7 @@ import static java.util.stream.Collectors.groupingBy;
     prices(adj open, adj close, adj low, adj high, and adj volume)
 
     Also future refactoring will consist of adding support of being able to pass in other securities
-    and start/end dates as parameters instead of basing it off of the default config
+    and start/end dates as parameters instead of basing it off the default config
  */
 public class QuandlSecurityProvider implements SecurityProvider {
     protected static final Optional<QuandlTimeSeriesCollapse> COLLAPSE = Optional.of(QuandlTimeSeriesCollapse.DAILY);
@@ -101,7 +101,7 @@ public class QuandlSecurityProvider implements SecurityProvider {
     }
 
     protected List<MonthlySecurityPrice> toMonthlyPrices(List<DailySecurityPrice> dailyPrices) {
-        //Date represented as month/year as key
+        //Group pricing by month/year
         Map<LocalDate, List<DailySecurityPrice>> monthlyPriceMap = dailyPrices
                 .parallelStream()
                 .collect(groupingBy(dsp -> {
