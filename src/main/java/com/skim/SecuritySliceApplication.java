@@ -3,6 +3,7 @@ package com.skim;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.skim.client.QuandlCacheClient;
 import com.skim.client.QuandlClient;
 import com.skim.client.QuandlClientImpl;
 import com.skim.configuration.QuandlConfiguration;
@@ -13,9 +14,6 @@ import com.skim.resources.SecurityResource;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-
-import java.net.URI;
-import java.util.Optional;
 
 public class SecuritySliceApplication extends Application<SecuritySliceConfiguration> {
 
@@ -49,13 +47,12 @@ public class SecuritySliceApplication extends Application<SecuritySliceConfigura
         QuandlConfiguration quandlConfiguration = configuration.getQuandl();
         SecurityProviderConfiguration securityProviderConfiguration = configuration.getSecurityProvider();
 
-        QuandlClient quandlClient = new QuandlClientImpl(quandlConfiguration, environment);
+        //Use cached client to improve performance and to prevent redundant calls to Quandl
+        QuandlClient quandlClient = new QuandlCacheClient(new QuandlClientImpl(quandlConfiguration, environment));
 
         SecurityProvider securityProvider = new QuandlSecurityProvider(quandlClient,
-                quandlConfiguration.getDatabaseCode(),
-                securityProviderConfiguration.getSecurities(),
-                Optional.of(securityProviderConfiguration.getStartDate()),
-                Optional.of(securityProviderConfiguration.getEndDate())
+                quandlConfiguration,
+                securityProviderConfiguration
                 );
 
         SecurityResource securityResource = new SecurityResource(securityProvider);

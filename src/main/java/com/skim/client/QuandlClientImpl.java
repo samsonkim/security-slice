@@ -6,7 +6,6 @@ import com.skim.client.dto.QuandlTimeSeriesCollapse;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
 import com.skim.configuration.QuandlConfiguration;
 import io.dropwizard.client.JerseyClientBuilder;
-import io.dropwizard.client.JerseyClientConfiguration;
 import io.dropwizard.setup.Environment;
 import org.joda.time.LocalDate;
 
@@ -14,7 +13,6 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.net.URI;
-import java.util.Date;
 import java.util.Optional;
 
 import static com.skim.utils.DateUtils.*;

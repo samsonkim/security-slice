@@ -12,12 +12,13 @@ logging:
     com.skim: DEBUG
 
 securityProvider:
-  securities:
+  securities:   # securities to use by default
     - COF
     - GOOGL
     - MSFT
-  startDate: 2017-01-01
-  endDate: 2017-06-30
+  startDate: 2017-01-01 # start date range for fetching daily prices
+  endDate: 2017-06-30   # end date range for fetching daily prices
+  busyDateThreshold: 10 # percentage value greater than avg daily security volume
 
 quandl:
   uri: https://www.quandl.com

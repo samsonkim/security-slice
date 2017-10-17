@@ -5,6 +5,8 @@ import com.skim.client.dto.QuandlTimeSeriesCollapse;
 import com.skim.client.dto.QuandlTimeSeriesColumn;
 import com.skim.client.dto.QuandlTimeSeriesDataset;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
+import com.skim.configuration.QuandlConfiguration;
+import com.skim.configuration.SecurityProviderConfiguration;
 import com.skim.model.DailySecurityPrice;
 import com.skim.model.MonthlySecurityPrice;
 import org.apache.commons.math3.util.Precision;
@@ -17,7 +19,8 @@ import static com.skim.utils.DateUtils.*;
 import static java.util.stream.Collectors.groupingBy;
 
 /*
-    This security provider will key off of adjusted prices(adj open, adj close) to factor in corporate actions
+    This security provider will key off of adjusted columns to factor in corporate actions
+    prices(adj open, adj close, adj low, adj high, and adj volume)
 
     Also future refactoring will consist of adding support of being able to pass in other securities
     and start/end dates as parameters instead of basing it off of the default config
@@ -32,13 +35,18 @@ public class QuandlSecurityProvider implements SecurityProvider {
     private final Set<String> defaultSecurities;
     private final Optional<LocalDate> defaultStartDate;
     private final Optional<LocalDate> defaultEndDate;
+    private final int busyDayThreshold;
 
-    public QuandlSecurityProvider(QuandlClient quandlClient, String databaseCode, Set<String> defaultSecurities, Optional<LocalDate> defaultStartDate, Optional<LocalDate> defaultEndDate) {
+    public QuandlSecurityProvider(QuandlClient quandlClient,
+                                  QuandlConfiguration quandlConfiguration,
+                                  SecurityProviderConfiguration securityProviderConfiguration
+                                  ) {
         this.quandlClient = quandlClient;
-        this.databaseCode = databaseCode;
-        this.defaultSecurities = defaultSecurities;
-        this.defaultStartDate = defaultStartDate;
-        this.defaultEndDate = defaultEndDate;
+        this.databaseCode = quandlConfiguration.getDatabaseCode();
+        this.defaultSecurities = securityProviderConfiguration.getSecurities();
+        this.defaultStartDate = Optional.ofNullable(securityProviderConfiguration.getStartDate());
+        this.defaultEndDate = Optional.ofNullable(securityProviderConfiguration.getEndDate());
+        this.busyDayThreshold = securityProviderConfiguration.getBusyDayThreshold();
     }
 
     @Override
@@ -95,6 +103,9 @@ public class QuandlSecurityProvider implements SecurityProvider {
         int dateIndex = columns.indexOf(QuandlTimeSeriesColumn.DATE.getColumn());
         int adjOpenIndex = columns.indexOf(QuandlTimeSeriesColumn.ADJ_OPEN.getColumn());
         int adjCloseIndex = columns.indexOf(QuandlTimeSeriesColumn.ADJ_CLOSE.getColumn());
+        int adjHighIndex = columns.indexOf(QuandlTimeSeriesColumn.ADJ_OPEN.getColumn());
+        int adjLowIndex = columns.indexOf(QuandlTimeSeriesColumn.ADJ_LOW.getColumn());
+        int adjVolumeIndex = columns.indexOf(QuandlTimeSeriesColumn.ADJ_VOLUME.getColumn());
 
         //Date represented as month/year as key
         List<DailySecurityPrice> dailyPrices = dataset.getData()
@@ -103,7 +114,16 @@ public class QuandlSecurityProvider implements SecurityProvider {
                     LocalDate date = QUANDL_DATE_FORMAT.parseLocalDate(r.get(dateIndex));
                     float adjustedOpen = Float.parseFloat(r.get(adjOpenIndex));
                     float adjustedClose = Float.parseFloat(r.get(adjCloseIndex));
-                    return new DailySecurityPrice(date, adjustedOpen, adjustedClose);
+                    float adjustedHigh = Float.parseFloat(r.get(adjHighIndex));
+                    float adjustedLow = Float.parseFloat(r.get(adjLowIndex));
+                    long adjustedVolume = Long.parseLong(r.get(adjVolumeIndex));
+
+                    return new DailySecurityPrice(date,
+                            adjustedOpen,
+                            adjustedClose,
+                            adjustedHigh,
+                            adjustedLow,
+                            adjustedVolume);
                 }).collect(Collectors.toList());
 
         return dailyPrices;

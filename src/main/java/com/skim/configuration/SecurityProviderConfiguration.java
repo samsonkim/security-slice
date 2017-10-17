@@ -15,15 +15,39 @@ public class SecurityProviderConfiguration {
     @JsonProperty
     private LocalDate endDate;
 
+    @JsonProperty
+    private int busyDayThreshold;
+
+
     public Set<String> getSecurities() {
         return securities;
+    }
+
+    public void setSecurities(Set<String> securities) {
+        this.securities = securities;
     }
 
     public LocalDate getStartDate() {
         return startDate;
     }
 
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
     public LocalDate getEndDate() {
         return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public int getBusyDayThreshold() {
+        return busyDayThreshold;
+    }
+
+    public void setBusyDayThreshold(int busyDayThreshold) {
+        this.busyDayThreshold = busyDayThreshold;
     }
 }

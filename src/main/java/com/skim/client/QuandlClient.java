@@ -12,4 +12,5 @@ public interface QuandlClient {
                                            Optional<QuandlTimeSeriesCollapse> collapse,
                                            Optional<LocalDate> startDate,
                                            Optional<LocalDate> endDate);
+
 }
