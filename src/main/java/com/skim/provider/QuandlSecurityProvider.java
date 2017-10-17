@@ -7,8 +7,7 @@ import com.skim.client.dto.QuandlTimeSeriesDataset;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
 import com.skim.configuration.QuandlConfiguration;
 import com.skim.configuration.SecurityProviderConfiguration;
-import com.skim.model.DailySecurityPrice;
-import com.skim.model.MonthlySecurityPrice;
+import com.skim.model.*;
 import org.apache.commons.math3.util.Precision;
 import org.joda.time.LocalDate;
 
@@ -40,7 +39,7 @@ public class QuandlSecurityProvider implements SecurityProvider {
     public QuandlSecurityProvider(QuandlClient quandlClient,
                                   QuandlConfiguration quandlConfiguration,
                                   SecurityProviderConfiguration securityProviderConfiguration
-                                  ) {
+    ) {
         this.quandlClient = quandlClient;
         this.databaseCode = quandlConfiguration.getDatabaseCode();
         this.defaultSecurities = securityProviderConfiguration.getSecurities();
@@ -50,10 +49,10 @@ public class QuandlSecurityProvider implements SecurityProvider {
     }
 
     @Override
-    public Map<String, List<MonthlySecurityPrice>> getMonthlyPrices(){
+    public Map<String, List<MonthlySecurityPrice>> getMonthlyPrices() {
         Map<String, List<MonthlySecurityPrice>> monthlyPriceMap = new HashMap<>();
 
-        for(String stockSymbol : defaultSecurities) {
+        for (String stockSymbol : defaultSecurities) {
             QuandlTimeSeriesResponse response = quandlClient.getTimeSeries(databaseCode,
                     stockSymbol, COLLAPSE, defaultStartDate, defaultEndDate);
             monthlyPriceMap.put(stockSymbol, toMonthlyPrices(toDailyPrices(response.getDataset())));
@@ -62,7 +61,46 @@ public class QuandlSecurityProvider implements SecurityProvider {
         return monthlyPriceMap;
     }
 
-    protected List<MonthlySecurityPrice> toMonthlyPrices(List<DailySecurityPrice> dailyPrices){
+    @Override
+    public Map<String, MaxDailyProfit> getMaxDailyProfit() {
+        Map<String, MaxDailyProfit> map = new HashMap<>();
+
+        for (String stockSymbol : defaultSecurities) {
+            QuandlTimeSeriesResponse response = quandlClient.getTimeSeries(databaseCode,
+                    stockSymbol, COLLAPSE, defaultStartDate, defaultEndDate);
+            map.put(stockSymbol, toMaxDailyProfit(toDailyPrices(response.getDataset())));
+        }
+
+        return map;
+    }
+
+    @Override
+    public Map<String, BusyDayResponse> getBusyDays() {
+        Map<String, BusyDayResponse> map = new HashMap<>();
+
+        for (String stockSymbol : defaultSecurities) {
+            QuandlTimeSeriesResponse response = quandlClient.getTimeSeries(databaseCode,
+                    stockSymbol, COLLAPSE, defaultStartDate, defaultEndDate);
+            map.put(stockSymbol, toBusyDayResponse(toDailyPrices(response.getDataset())));
+        }
+
+        return map;
+    }
+
+    @Override
+    public BiggestLoser getBiggestLoser() {
+        return defaultSecurities.parallelStream()
+                .map(s -> {
+                    QuandlTimeSeriesResponse response = quandlClient.getTimeSeries(databaseCode,
+                            s, COLLAPSE, defaultStartDate, defaultEndDate);
+
+                    Long count = getBiggestLoserCount(toDailyPrices(response.getDataset()));
+                    return new BiggestLoser(s, count.intValue());
+                }).max(Comparator.comparing(BiggestLoser::getDays))
+                .orElseThrow(NoSuchElementException::new);
+    }
+
+    protected List<MonthlySecurityPrice> toMonthlyPrices(List<DailySecurityPrice> dailyPrices) {
         //Date represented as month/year as key
         Map<LocalDate, List<DailySecurityPrice>> monthlyPriceMap = dailyPrices
                 .parallelStream()
@@ -94,10 +132,42 @@ public class QuandlSecurityProvider implements SecurityProvider {
                 .collect(Collectors.toList());
     }
 
+    protected MaxDailyProfit toMaxDailyProfit(List<DailySecurityPrice> dailyPrices) {
+        return dailyPrices.parallelStream()
+                .map(p -> {
+                    float profit = p.getHigh() - p.getLow();
+                    return new MaxDailyProfit(p.getDate(), profit);
+                })
+                .max(Comparator.comparing(MaxDailyProfit::getProfit))
+                .orElseThrow(NoSuchElementException::new);
+    }
+
+    protected BusyDayResponse toBusyDayResponse(List<DailySecurityPrice> dailyPrices) {
+        Double averageVolume = dailyPrices.parallelStream()
+                .mapToLong(DailySecurityPrice::getVolume)
+                .average()
+                .getAsDouble();
+
+        Long threshold = (1 + (busyDayThreshold / 100)) * averageVolume.longValue();
+
+        List<BusyDay> busyDays = dailyPrices.parallelStream()
+                .filter(dp -> dp.getVolume() >= threshold)
+                .map(dp -> new BusyDay(dp.getDate(), dp.getVolume()))
+                .collect(Collectors.toList());
+
+        return new BusyDayResponse(averageVolume.longValue(), busyDays);
+    }
+
+    protected long getBiggestLoserCount(List<DailySecurityPrice> dailyPrices){
+        return dailyPrices.parallelStream()
+                .filter(dp -> dp.getClose() < dp.getOpen())
+                .count();
+    }
+
     /*
-        Converts Quandl response to our model of daily prices
+        Converts Quandl api response to our model of daily prices
      */
-    protected List<DailySecurityPrice> toDailyPrices(QuandlTimeSeriesDataset dataset){
+    protected List<DailySecurityPrice> toDailyPrices(QuandlTimeSeriesDataset dataset) {
         List<String> columns = dataset.getColumnNames();
 
         int dateIndex = columns.indexOf(QuandlTimeSeriesColumn.DATE.getColumn());

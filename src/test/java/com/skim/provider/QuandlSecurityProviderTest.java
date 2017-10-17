@@ -6,8 +6,7 @@ import com.skim.client.dto.QuandlTimeSeriesDataset;
 import com.skim.client.dto.QuandlTimeSeriesResponse;
 import com.skim.configuration.QuandlConfiguration;
 import com.skim.configuration.SecurityProviderConfiguration;
-import com.skim.model.DailySecurityPrice;
-import com.skim.model.MonthlySecurityPrice;
+import com.skim.model.*;
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
@@ -279,6 +278,60 @@ public class QuandlSecurityProviderTest {
 
         monthlyPrices = response.get("testB");
         assertEquals(5, monthlyPrices.get(0).getMonthYearDate().getMonthOfYear());
+    }
+
+    @Test
+    public void testToMaxDailyProfit(){
+        LocalDate startDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-01-02");
+
+        List<DailySecurityPrice> prices = new ArrayList<>();
+        prices.add(new DailySecurityPrice(startDate, 0, 0, 2, 1, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(1), 0, 0, 4, 2, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(2), 0, 0, 32, 5, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(3), 0, 0, 16, 9, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(4), 0, 0, 8, 4, 0));
+
+        MaxDailyProfit result = instance.toMaxDailyProfit(prices);
+
+        assertNotNull(result);
+        assertEquals(startDate.plusDays(2), result.getDate());
+        assertTrue(27.0f == result.getProfit());
+    }
+
+    @Test
+    public void testToBusyDayResponse(){
+        LocalDate startDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-01-02");
+
+        List<DailySecurityPrice> prices = new ArrayList<>();
+        prices.add(new DailySecurityPrice(startDate, 0, 0, 0, 0, 1000));
+        prices.add(new DailySecurityPrice(startDate.plusDays(1), 0, 0, 0, 0, 2000));
+        prices.add(new DailySecurityPrice(startDate.plusDays(2), 0, 0, 0, 0, 4000));
+        prices.add(new DailySecurityPrice(startDate.plusDays(3), 0, 0, 0, 0, 6000));
+        prices.add(new DailySecurityPrice(startDate.plusDays(4), 0, 0, 0, 0, 8000));
+
+        BusyDayResponse result = instance.toBusyDayResponse(prices);
+
+        assertNotNull(result);
+        assertTrue(4200L == result.getAverageVolume());
+        assertTrue(2 == result.getDays().size());
+        assertThat(result.getDays()).extracting("date").containsOnly(startDate.plusDays(3), startDate.plusDays(4));
+        assertThat(result.getDays()).extracting("volume").containsOnly(6000L, 8000L);
+    }
+
+    @Test
+    public void testGetBiggestLoserCount(){
+        LocalDate startDate = QUANDL_DATE_FORMAT.parseLocalDate("2017-01-02");
+
+        List<DailySecurityPrice> prices = new ArrayList<>();
+        prices.add(new DailySecurityPrice(startDate, 2, 2, 0, 0, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(1), 3, 2, 0, 0, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(2), 4, 6, 0, 0, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(3), 6, 5, 0, 0, 0));
+        prices.add(new DailySecurityPrice(startDate.plusDays(4), 5, 4, 0, 0, 0));
+
+        long result = instance.getBiggestLoserCount(prices);
+
+        assertEquals(3, result);
     }
 
     private QuandlTimeSeriesDataset createTestDataset() {
